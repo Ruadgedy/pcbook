@@ -13,3 +13,11 @@
 # GRPC vs REST
 ![GRPC vs REST](./img/QQ20220416-212016@2x.png)
 
+# unary GRPC & What will we do
+1. Define proto service
+2. Implement server in Go
+> Write server-side code to handle the unary RPC request:save laptop to an in-memory store
+3. Implement client in Go
+> Write client-side code to call the unary RPC on server.Also write unit test for the interaction between client and server
+4. Handle errors and deadline 
+> Learn how to set deadline for the request,check for cancellation,handle errors,and return suitable status code to the client
