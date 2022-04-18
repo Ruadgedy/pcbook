@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"time"
 )
 
 // LaptopServer is the server that provides laptop services
@@ -34,6 +35,21 @@ func (server *LaptopServer) CreateLaptop(ctx context.Context, req *pb.CreateLapt
 		laptop.Id = id.String()
 	}
 
+	// 模拟一些重任务
+	time.Sleep(time.Second*6)
+
+	// 判断请求是否取消
+	if ctx.Err() == context.Canceled {
+		log.Println("request is canceled")
+		return nil, status.Errorf(codes.Canceled,"request is canceled")
+	}
+
+	// 判断请求是否超时
+	if ctx.Err() == context.DeadlineExceeded {
+		log.Println("deadline is exceeded")
+		return nil,status.Errorf(codes.DeadlineExceeded,"deadline is exceeded")
+	}
+
 	// save the laptop to store
 	err := server.Store.Save(laptop)
 	if err != nil {
@@ -44,7 +60,7 @@ func (server *LaptopServer) CreateLaptop(ctx context.Context, req *pb.CreateLapt
 		return nil, status.Errorf(code, "cannot save the laptop: %v", err)
 	}
 
-	log.Printf("saved laptop wiith id: %s", laptop.Id)
+	log.Printf("saved laptop with id: %s", laptop.Id)
 
 	res := &pb.CreateLaptopResponse{Id: laptop.Id}
 	return res, nil
