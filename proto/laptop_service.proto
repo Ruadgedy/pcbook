@@ -17,22 +17,23 @@ message SearchLaptopRequest { Filter filter = 1; }
 
 message SearchLaptopResponse { Laptop laptop = 1; }
 
-//message UploadImageRequest {
-//  oneof data {
-//    ImageInfo info = 1;
-//    bytes chunk_data = 2;
-//  };
-//}
-//
-//message ImageInfo {
-//  string laptop_id = 1;
-//  string image_type = 2;
-//}
-//
-//message UploadImageResponse {
-//  string id = 1;
-//  uint32 size = 2;
-//}
+// 将Image切分为一块块数据，每一个Request当中包含一块数据
+message UploadImageRequest {
+  oneof data {
+    ImageInfo info = 1;   // First request will only contain the metadata
+    bytes chunk_data = 2; // And the following request will contain the image data chunks
+  };
+}
+
+message ImageInfo {
+  string laptop_id = 1;
+  string image_type = 2;
+}
+
+message UploadImageResponse {
+  string id = 1;
+  uint32 size = 2;  // the total size of the uploaded image in bytes
+}
 //
 //message RateLaptopRequest {
 //  string laptop_id = 1;
@@ -51,4 +52,7 @@ service LaptopService {
 
   // server-streaming
   rpc SearchLaptop(SearchLaptopRequest) returns (stream SearchLaptopResponse){};
+
+  // client-streaming
+  rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse){};
 }

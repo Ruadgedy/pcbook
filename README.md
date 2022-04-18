@@ -30,3 +30,12 @@
 3. Implement client in Go
 > Write client-side code to call the server-streaming RPC on server
 4. Write unit test
+
+# client-streaming gRPC & What will we do 
+1. Define RPC in proto file
+> Add client-streaming RPC to upload a laptop image
+2. Implement server in Go
+> Write server-side code to handle the client-streaming RPC
+3. Implement client in Go
+> Write client-side code to call the client-streaming RPC
+4. Write unit test

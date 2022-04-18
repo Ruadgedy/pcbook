@@ -15,7 +15,7 @@ var ErrAlreadyExists = fmt.Errorf("the laptop ID is already exists")
 type LaptopStore interface {
 	Save(laptop *pb.Laptop) error
 	Find(id string) (*pb.Laptop, error)
-	Search(ctx context.Context,filter *pb.Filter,found func(laptop *pb.Laptop)error) error
+	Search(ctx context.Context, filter *pb.Filter, found func(laptop *pb.Laptop) error) error
 }
 
 type InMemoryLaptopStore struct {
@@ -44,7 +44,7 @@ func (store *InMemoryLaptopStore) Search(
 
 		if isQualified(filter, laptop) {
 			// deep copy
-			other,err := deepCopy(laptop)
+			other, err := deepCopy(laptop)
 			if err != nil {
 				return err
 			}
@@ -80,15 +80,15 @@ func toBit(memory *pb.Memory) uint64 {
 	case pb.Memory_BIT:
 		return value
 	case pb.Memory_BYTE:
-		return value<<3
+		return value << 3
 	case pb.Memory_KILOBYTE:
-		return value<<13
+		return value << 13
 	case pb.Memory_MEGABYTE:
-		return value<<23
+		return value << 23
 	case pb.Memory_GIGABYTE:
-		return value<<33
+		return value << 33
 	case pb.Memory_TERABYTE:
-		return value<<43
+		return value << 43
 	default:
 		return 0
 	}
@@ -105,9 +105,9 @@ func deepCopy(laptop *pb.Laptop) (*pb.Laptop, error) {
 	other := &pb.Laptop{}
 	err := copier.Copy(other, laptop)
 	if err != nil {
-		return nil,fmt.Errorf("cannot copy laptop data: %v", err)
+		return nil, fmt.Errorf("cannot copy laptop data: %v", err)
 	}
-	return other,nil
+	return other, nil
 }
 
 func (store *InMemoryLaptopStore) Save(laptop *pb.Laptop) error {
@@ -119,7 +119,7 @@ func (store *InMemoryLaptopStore) Save(laptop *pb.Laptop) error {
 	}
 
 	// deep copy
-	other,err := deepCopy(laptop)
+	other, err := deepCopy(laptop)
 	if err != nil {
 		return err
 	}
