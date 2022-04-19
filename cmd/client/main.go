@@ -15,7 +15,7 @@ import (
 
 func createLaptop(laptopClient pb.LaptopServiceClient) {
 	laptop := sample.NewLaptop()
-	req := &pb.CreateLaptopRequest{Laptop:laptop}
+	req := &pb.CreateLaptopRequest{Laptop: laptop}
 
 	// set timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -27,12 +27,12 @@ func createLaptop(laptopClient pb.LaptopServiceClient) {
 		if ok && st.Code() == codes.AlreadyExists {
 			// not a big deal
 			log.Println("laptop already exists")
-		}else {
-			log.Fatal("cannot create laptop: ",err)
+		} else {
+			log.Fatal("cannot create laptop: ", err)
 		}
 		return
 	}
-	log.Printf("create laptop with id: %s",resp.Id)
+	log.Printf("create laptop with id: %s", resp.Id)
 }
 
 func searchLaptop(laptopClient pb.LaptopServiceClient, filter *pb.Filter) {
@@ -44,7 +44,7 @@ func searchLaptop(laptopClient pb.LaptopServiceClient, filter *pb.Filter) {
 	req := &pb.SearchLaptopRequest{Filter: filter}
 	stream, err := laptopClient.SearchLaptop(ctx, req)
 	if err != nil {
-		log.Fatal("cannot search laptop: ",err)
+		log.Fatal("cannot search laptop: ", err)
 	}
 
 	for {
@@ -53,15 +53,15 @@ func searchLaptop(laptopClient pb.LaptopServiceClient, filter *pb.Filter) {
 			return
 		}
 		if err != nil {
-			log.Fatal("cannot receive response: ",err)
+			log.Fatal("cannot receive response: ", err)
 		}
 
 		laptop := recv.GetLaptop()
-		log.Print("- found: ",laptop)
+		log.Print("- found: ", laptop)
 	}
 }
 
-func main()  {
+func main() {
 	serverAddress := flag.String("address", "", "the server address")
 
 	flag.Parse()
@@ -69,22 +69,22 @@ func main()  {
 
 	conn, err := grpc.Dial(*serverAddress, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("cannot dial server: ",err)
+		log.Fatal("cannot dial server: ", err)
 	}
 
 	laptopClient := pb.NewLaptopServiceClient(conn)
 	for i := 0; i < 10; i++ {
 		createLaptop(laptopClient)
 	}
-	
+
 	filter := &pb.Filter{
 		MaxPriceUsd: 3000,
 		MinCpuCores: 4,
 		MinCpuGhz:   2.5,
-		MinRam:      &pb.Memory{
+		MinRam: &pb.Memory{
 			Value: 8,
 			Unit:  pb.Memory_GIGABYTE,
 		},
 	}
-	searchLaptop(laptopClient,filter)
+	searchLaptop(laptopClient, filter)
 }

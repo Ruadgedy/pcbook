@@ -40,13 +40,13 @@ func (server *LaptopServer) CreateLaptop(ctx context.Context, req *pb.CreateLapt
 	// 判断请求是否取消
 	if ctx.Err() == context.Canceled {
 		log.Println("request is canceled")
-		return nil, status.Errorf(codes.Canceled,"request is canceled")
+		return nil, status.Errorf(codes.Canceled, "request is canceled")
 	}
 
 	// 判断请求是否超时
 	if ctx.Err() == context.DeadlineExceeded {
 		log.Println("deadline is exceeded")
-		return nil,status.Errorf(codes.DeadlineExceeded,"deadline is exceeded")
+		return nil, status.Errorf(codes.DeadlineExceeded, "deadline is exceeded")
 	}
 
 	// save the laptop to store
@@ -68,9 +68,9 @@ func (server *LaptopServer) CreateLaptop(ctx context.Context, req *pb.CreateLapt
 func (server *LaptopServer) SearchLaptop(
 	req *pb.SearchLaptopRequest,
 	stream pb.LaptopService_SearchLaptopServer,
-) error{
+) error {
 	filter := req.GetFilter()
-	log.Printf("receive a search-laptop request with filter: %v",filter)
+	log.Printf("receive a search-laptop request with filter: %v", filter)
 
 	err := server.Store.Search(
 		stream.Context(),
@@ -88,7 +88,7 @@ func (server *LaptopServer) SearchLaptop(
 		},
 	)
 	if err != nil {
-		return status.Errorf(codes.Internal,"unexpected error: %v", err)
+		return status.Errorf(codes.Internal, "unexpected error: %v", err)
 	}
 	return nil
 }
