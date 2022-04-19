@@ -34,17 +34,17 @@ message UploadImageResponse {
   string id = 1;
   uint32 size = 2;  // the total size of the uploaded image in bytes
 }
-//
-//message RateLaptopRequest {
-//  string laptop_id = 1;
-//  double score = 2;
-//}
 
-//message RateLaptopResponse {
-//  string laptop_id = 1;
-//  uint32 rated_count = 2;
-//  double average_score = 3;
-//}
+message RateLaptopRequest {
+  string laptop_id = 1;
+  double score = 2;
+}
+
+message RateLaptopResponse {
+  string laptop_id = 1;
+  uint32 rated_count = 2; // The number of time this laptop was rated
+  double average_score = 3; // the average rated score
+}
 
 service LaptopService {
   // unary client and unary server
@@ -55,4 +55,7 @@ service LaptopService {
 
   // client-streaming
   rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse){};
+
+  // bidirectional-streaming
+  rpc RateLaptop(stream RateLaptopRequest) returns(stream RateLaptopResponse){};
 }

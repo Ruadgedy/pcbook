@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"flag"
+	"fmt"
 	"github.com/Ruadgedy/pcbook/pb"
 	"github.com/Ruadgedy/pcbook/sample"
 	"google.golang.org/grpc"
@@ -13,10 +14,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
-func createLaptop(laptopClient pb.LaptopServiceClient,laptop *pb.Laptop) {
+func createLaptop(laptopClient pb.LaptopServiceClient, laptop *pb.Laptop) {
 	req := &pb.CreateLaptopRequest{Laptop: laptop}
 
 	// set timeout
@@ -63,13 +65,65 @@ func searchLaptop(laptopClient pb.LaptopServiceClient, filter *pb.Filter) {
 	}
 }
 
-func testCreateLaptop(laptopClient pb.LaptopServiceClient) {
-	createLaptop(laptopClient,sample.NewLaptop())
+func rateLaptop(laptopClient pb.LaptopServiceClient, laptopIDs []string, scores []float64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	stream, err := laptopClient.RateLaptop(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot rate laptop: %v", err)
+	}
+
+	waitResponse := make(chan error)
+
+	// go routine to receive response
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				log.Printf("no mroe response")
+				waitResponse <- nil
+				return
+			}
+			if err != nil {
+				waitResponse <- fmt.Errorf("cannot receive stream response: %v", err)
+				return
+			}
+
+			log.Print("receive response: ", res)
+		}
+	}()
+
+	// send request
+	for i, laptopID := range laptopIDs {
+		req := &pb.RateLaptopRequest{
+			LaptopId: laptopID,
+			Score:    scores[i],
+		}
+
+		err := stream.Send(req)
+		if err != nil {
+			return fmt.Errorf("cannot send stream request: %v - %v", err, stream.RecvMsg(nil))
+		}
+
+		log.Print("send request: ", req)
+	}
+
+	err = stream.CloseSend()
+	if err != nil {
+		return fmt.Errorf("cannot close send: %v", err)
+	}
+	err = <-waitResponse
+	return err
 }
 
-func testSearchLaptop(laptopClient pb.LaptopServiceClient)  {
+func testCreateLaptop(laptopClient pb.LaptopServiceClient) {
+	createLaptop(laptopClient, sample.NewLaptop())
+}
+
+func testSearchLaptop(laptopClient pb.LaptopServiceClient) {
 	for i := 0; i < 10; i++ {
-		createLaptop(laptopClient,sample.NewLaptop())
+		createLaptop(laptopClient, sample.NewLaptop())
 	}
 
 	filter := &pb.Filter{
@@ -86,14 +140,14 @@ func testSearchLaptop(laptopClient pb.LaptopServiceClient)  {
 
 func testUploadImage(laptopClient pb.LaptopServiceClient) {
 	laptop := sample.NewLaptop()
-	createLaptop(laptopClient,laptop)
-	uploadImage(laptopClient,laptop.GetId(),"img/laptop.jpg")
+	createLaptop(laptopClient, laptop)
+	uploadImage(laptopClient, laptop.GetId(), "img/laptop.jpg")
 }
 
 func uploadImage(laptopClient pb.LaptopServiceClient, laptopId string, imagePath string) {
 	file, err := os.Open(imagePath)
 	if err != nil {
-		log.Fatalf("cannot open image path: %v",err)
+		log.Fatalf("cannot open image path: %v", err)
 	}
 	defer file.Close()
 
@@ -102,7 +156,7 @@ func uploadImage(laptopClient pb.LaptopServiceClient, laptopId string, imagePath
 
 	stream, err := laptopClient.UploadImage(ctx)
 	if err != nil {
-		log.Fatal("cannot upload image:",err)
+		log.Fatal("cannot upload image:", err)
 	}
 
 	req := &pb.UploadImageRequest{
@@ -116,7 +170,7 @@ func uploadImage(laptopClient pb.LaptopServiceClient, laptopId string, imagePath
 
 	err = stream.Send(req)
 	if err != nil {
-		log.Fatal("cannot send image info: ",err)
+		log.Fatal("cannot send image info: ", err)
 	}
 
 	reader := bufio.NewReader(file)
@@ -128,7 +182,7 @@ func uploadImage(laptopClient pb.LaptopServiceClient, laptopId string, imagePath
 			break
 		}
 		if err != nil {
-			log.Fatal("cannot read chunk to buffer: ",err)
+			log.Fatal("cannot read chunk to buffer: ", err)
 		}
 
 		req := &pb.UploadImageRequest{
@@ -140,16 +194,47 @@ func uploadImage(laptopClient pb.LaptopServiceClient, laptopId string, imagePath
 		err = stream.Send(req)
 		if err != nil {
 			err2 := stream.RecvMsg(nil)
-			log.Fatal("cannot send chunk to server: ", err,err2)
+			log.Fatal("cannot send chunk to server: ", err, err2)
 		}
 	}
 
 	resp, err := stream.CloseAndRecv()
 	if err != nil {
-		log.Fatal("cannot receive response from server: ",err)
+		log.Fatal("cannot receive response from server: ", err)
 	}
 
-	log.Printf("image uploaded with id:%s, size: %d",resp.GetId(),resp.GetSize())
+	log.Printf("image uploaded with id:%s, size: %d", resp.GetId(), resp.GetSize())
+}
+
+func testRateLaptop(laptopClient pb.LaptopServiceClient) {
+	n := 3
+	laptopIDs := make([]string, n)
+
+	for i := 0; i < n; i++ {
+		laptop := sample.NewLaptop()
+		laptopIDs[i] = laptop.Id
+		createLaptop(laptopClient, laptop)
+	}
+
+	scores := make([]float64, n)
+	for {
+		fmt.Print("rate laptop (y/n)?")
+		var answer string
+		fmt.Scan(&answer)
+
+		if strings.ToLower(answer) != "y" {
+			break
+		}
+
+		for i := 0; i < n; i++ {
+			scores[i] = sample.RandomLaptopScore()
+		}
+
+		err := rateLaptop(laptopClient, laptopIDs, scores)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func main() {
@@ -165,5 +250,6 @@ func main() {
 
 	laptopClient := pb.NewLaptopServiceClient(conn)
 
-	testUploadImage(laptopClient)
+	//testUploadImage(laptopClient)
+	testRateLaptop(laptopClient)
 }

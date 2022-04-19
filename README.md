@@ -39,3 +39,12 @@
 3. Implement client in Go
 > Write client-side code to call the client-streaming RPC
 4. Write unit test
+
+# bidirectional gRPC & What will we do 
+1. Define RPC in proto file
+> Add bidirectional-streaming RPC to rate a laptop
+2. Implement server in Go
+> Write server-side code to handle the bidirectional-streaming RPC
+3. Implement client in Go
+> Write client-side code to call the bidirectional-streaming RPC
+4. Write unit test
