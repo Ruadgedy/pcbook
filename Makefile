@@ -13,3 +13,5 @@ client:
 
 test:
 	go test -cover -race ./...
+
+.PHONY: client

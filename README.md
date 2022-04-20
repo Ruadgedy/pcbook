@@ -48,3 +48,14 @@
 3. Implement client in Go
 > Write client-side code to call the bidirectional-streaming RPC
 4. Write unit test
+
+# What is GRPC interceptor?
+![interceptor](./img/QQ20220419-132058@2x.png)
+## What will we do?
+1. Implement server interceptors
+ - Authenticate users with JWT
+ - Authorize access by roles
+2. Implement client interceptors
+ - Login user to get JWT access token
+ - Attach token to RPC request
+> 有两种类型的interceptor，一种是unary拦截器，另一种是stream拦截器
