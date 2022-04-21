@@ -59,3 +59,11 @@
  - Login user to get JWT access token
  - Attach token to RPC request
 > 有两种类型的interceptor，一种是unary拦截器，另一种是stream拦截器
+
+# 3 types of GRPC connection
+1. insecure
+> Plaintext data. No encryption. Don't use it for production.
+2. server-side tls
+> Encrypted data. Only server needs to provide its certificate to client
+3. Mutual tls
+> Encrypted data.Both client and server need to provide certificates to each other.

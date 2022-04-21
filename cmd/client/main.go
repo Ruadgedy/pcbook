@@ -1,12 +1,16 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"github.com/Ruadgedy/pcbook/client"
 	"github.com/Ruadgedy/pcbook/pb"
 	"github.com/Ruadgedy/pcbook/sample"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -86,16 +90,38 @@ func authMethods() map[string]bool {
 	}
 }
 
+func loadTLSCredentials() (credentials.TransportCredentials, error) {
+	// need to load the certificate of the CA who signed the server's certificate.
+	// the reason is, client needs to verify the certificate it gets from the server
+	pemServerCA, err := ioutil.ReadFile("cert/ca-cert.pem")
+	if err != nil {
+		return nil,err
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(pemServerCA) {
+		return nil,fmt.Errorf("failed to add server CA's certificate")
+	}
+
+	config := &tls.Config{
+		RootCAs:certPool,
+	}
+	return credentials.NewTLS(config),nil
+}
+
 func main() {
 	serverAddress := flag.String("address", "", "the server address")
 	//enableTLS := flag.Bool("tls", false, "enable SSL/TLS")
 	flag.Parse()
 	log.Printf("dial server %s", *serverAddress)
 
-	//transportOption := grpc.WithInsecure()
+	tlsCredentials,err := loadTLSCredentials()
+	if err != nil {
+		log.Fatal("cannot load TLS credentials: ",err)
+	}
 
 	// client dial to Auth Server
-	cc1, err := grpc.Dial(*serverAddress, grpc.WithInsecure())
+	cc1, err := grpc.Dial(*serverAddress, grpc.WithTransportCredentials(tlsCredentials))
 	if err != nil {
 		log.Fatal("cannot dial server: ", err)
 	}
@@ -108,7 +134,7 @@ func main() {
 	// client dial to laptop server
 	cc2, err := grpc.Dial(
 		*serverAddress,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(tlsCredentials),
 		grpc.WithUnaryInterceptor(interceptor.Unary()),
 		grpc.WithStreamInterceptor(interceptor.Stream()),
 	)
